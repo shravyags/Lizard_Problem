@@ -6,7 +6,6 @@ import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
@@ -15,21 +14,16 @@ import java.util.Map;
 import java.util.Random;
 
 public class LizardProblem {
-	private static BufferedReader bufferedReader;
 	private static int dimension = 0;
-	private static String algo;
+	private static String searchStrategy;
 	private static int totalBabyLizards = 0;
 	private static int[][] input = null;
-	private static int[][] output = null;
 	private static int treeCount = 0;
-	private static Map<Integer, List<Integer>> treePositions = new LinkedHashMap<>();
 	private static int[][] currentZoo = null;
 	private static int[][] zoo = null;
 	private static Map<Integer, Position> placedLizardPositions = new LinkedHashMap<>();
 	private static Map<Integer, Position> newLizardsPositions = new LinkedHashMap<>();
 	private static Random rand = new Random();
-	private static double temparature = 15;
-	private static double reducingFactor = 0.00001;
 	private static double time = 1.1;
 	private static List<Position> availablePositions = new ArrayList<Position>();
 	private static List<Position> curAvailablePositions = new ArrayList<Position>();
@@ -89,81 +83,53 @@ public class LizardProblem {
 		return true;
 	}
 
-	public static class Graph {
-		private int[][] intermediate = null;
+	public static class Node {
+		private int[][] intermediateMatrix = null;
 		private int lizardCount;
-		private int lastLevelPlaced;
-		private int lastRow;
-		private int lastCol;
+		private int latestRowLizPlaced;
+//		private int lastRow;
+		private int latestColLizPlaced;
 
-		Graph() {
+		Node() {
+			// default constructor
 		}
 
-		Graph(Graph copyConstructor) {
-			this.intermediate = new int[dimension][dimension];
+		Node(Node copyConstructor) {
+			this.intermediateMatrix = new int[dimension][dimension];
 			for (int i = 0; i < dimension; i++)
 				for (int j = 0; j < dimension; j++)
-					this.intermediate[i][j] = copyConstructor.intermediate[i][j];
-			this.lastLevelPlaced = copyConstructor.lastLevelPlaced;
+					this.intermediateMatrix[i][j] = copyConstructor.intermediateMatrix[i][j];
+			this.latestRowLizPlaced = copyConstructor.latestRowLizPlaced;
 			this.lizardCount = copyConstructor.lizardCount;
-			this.lastCol = copyConstructor.lastCol;
-			this.lastRow = copyConstructor.lastRow;
-		}
-
-		public static void getAllLizards(int[][] output) {
-			try {
-				List<String> lines = new ArrayList<String>();
-				lines.add("OK");
-				for (int i = 0; i < dimension; i++) {
-					String res = "";
-					for (int j = 0; j < dimension; j++) {
-						res = res + output[i][j];
-					}
-					lines.add(res);
-				}
-				SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
-				Path file = Paths.get(outputFilePath);
-				Files.write(file, lines, Charset.forName("UTF-8"));
-			} catch (Exception e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
+			this.latestColLizPlaced = copyConstructor.latestColLizPlaced;
 		}
 
 		public int getLizardCount() {
 			return lizardCount;
 		}
 
-		public int getLastRow() {
-			return lastRow;
+		public int getLatestRowLizPlaced() {
+			return latestRowLizPlaced;
 		}
 
-		public void setLastRow(int lastRow) {
-			this.lastRow = lastRow;
+		public void setLatestRowLizPlaced(int latestRowLizPlaced) {
+			this.latestRowLizPlaced = latestRowLizPlaced;
 		}
 
-		public int getLastCol() {
-			return lastCol;
+		public int getLatestColLizPlaced() {
+			return latestColLizPlaced;
 		}
 
-		public void setLastCol(int lastCol) {
-			this.lastCol = lastCol;
+		public void setLatestColLizPlaced(int latestColLizPlaced) {
+			this.latestColLizPlaced = latestColLizPlaced;
 		}
 
-		public int[][] getIntermediate() {
-			return intermediate;
+		public int[][] getIntermediateMatrix() {
+			return intermediateMatrix;
 		}
 
-		public void setIntermediate(int[][] intermediate) {
-			this.intermediate = intermediate;
-		}
-
-		public int getLastLevelPlaced() {
-			return lastLevelPlaced;
-		}
-
-		public void setLastLevelPlaced(int lastLevelPlaced) {
-			this.lastLevelPlaced = lastLevelPlaced;
+		public void setIntermediateMatrix(int[][] intermediateMatrix) {
+			this.intermediateMatrix = intermediateMatrix;
 		}
 
 		public void setLizardCount(int lizardCount) {
@@ -275,7 +241,6 @@ public class LizardProblem {
 			}
 		}
 		placedLizardPositions = new LinkedHashMap<>();
-		newLizardsPositions = new LinkedHashMap<>();
 		for (int i = 1; i <= totalBabyLizards; i++) {
 			Random r = new Random();
 			int availPosKey = r.nextInt(availablePositions.size() - 0) + 0;
@@ -286,13 +251,10 @@ public class LizardProblem {
 			p.x = x;
 			p.y = y;
 			placedLizardPositions.put(i, p);
-			newLizardsPositions.put(i, p);
 			zoo[x][y] = 1;
 			currentZoo[x][y] = 1;
 			availablePositions.remove(availPosKey);
-			curAvailablePositions.remove(availPosKey);
 		}
-		// displayOutput();
 		return checkLizardAttacks(placedLizardPositions, zoo);
 	}
 
@@ -340,7 +302,6 @@ public class LizardProblem {
 		oldPos.setX(oldXPos);
 		oldPos.setY(oldYPos);
 		curAvailablePositions.add(oldPos);
-		// displayOutput();
 		return checkLizardAttacks(newLizardsPositions, currentZoo);
 	}
 
@@ -380,14 +341,14 @@ public class LizardProblem {
 		return false;
 	}
 
-	public static void displayOutput() {
+	public static void displayOutput(int[][] output) {
 		try {
 			List<String> lines = new ArrayList<String>();
 			lines.add("OK");
 			for (int i = 0; i < dimension; i++) {
 				String res = "";
 				for (int j = 0; j < dimension; j++) {
-					res = res + zoo[i][j];
+					res = res + output[i][j];
 				}
 				lines.add(res);
 			}
@@ -396,38 +357,48 @@ public class LizardProblem {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-
+		return;
+	}
+	
+	public static void displayFailureOutput() {
+		try {
+		List<String> lines = new ArrayList<String>();
+		lines.add("FAIL");
+		Path file = Paths.get(outputFilePath);
+		Files.write(file, lines, Charset.forName("UTF-8"));
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		return;
 	}
 
 	public static void main(String[] args) {
-
 		// The name of the file to open.
 		String fileName = inputFilePath;
 		String line = null;
 		try {
 			FileReader fileReader = new FileReader(fileName);
-			bufferedReader = new BufferedReader(fileReader);
+			BufferedReader bufferedReader = new BufferedReader(fileReader);
 			int lineNo = 0;
 
 			while ((line = bufferedReader.readLine()) != null) {
 				switch (lineNo) {
 				case 0: {
-					algo = line.trim();
-					// System.out.println(line);
+					//either BFS, DFS or SA
+					searchStrategy = line.trim();
 					break;
 				}
 				case 1: {
+					// zoo dimension
 					dimension = Integer.parseInt(line.trim());
-					// System.out.println(line);
 					input = new int[dimension][dimension];
-					output = new int[dimension][dimension];
 					zoo = new int[dimension][dimension];
 					currentZoo = new int[dimension][dimension];
 					break;
 				}
 				case 2: {
+					// no of lizards
 					totalBabyLizards = Integer.parseInt(line.trim());
-					// System.out.println(line);
 					break;
 				}
 				default: {
@@ -437,14 +408,12 @@ public class LizardProblem {
 						input[rowNo][i] = Character.getNumericValue(nodes.trim().charAt(i));
 						zoo[rowNo][i] = Character.getNumericValue(nodes.trim().charAt(i));
 						if (input[rowNo][i] == 2) {
-							put(treePositions, rowNo, i);
 							treeCount++;
 						} else {
 							Position p = new Position();
 							p.setX(rowNo);
 							p.setY(i);
 							availablePositions.add(p);
-							curAvailablePositions.add(p);
 						}
 					}
 				}
@@ -453,88 +422,75 @@ public class LizardProblem {
 			}
 
 			if (totalBabyLizards == 0) {
-				displayOutput();
+				displayOutput(zoo);
 				return;
 			}
 			
 			if (treeCount == 0 && (totalBabyLizards > dimension)) {
-				List<String> lines = new ArrayList<String>();
-				lines.add("FAIL");
-				Path file = Paths.get(outputFilePath);
-				Files.write(file, lines, Charset.forName("UTF-8"));
+				displayFailureOutput();
 				return;
 			}
 
-			if ("BFS".equalsIgnoreCase(algo) || "DFS".equalsIgnoreCase(algo)) {
-				Graph g;
-				LinkedList<Graph> queue = new LinkedList<Graph>();
+			if ("BFS".equalsIgnoreCase(searchStrategy) || "DFS".equalsIgnoreCase(searchStrategy)) {
+				Node node;
+				LinkedList<Node> queue = new LinkedList<Node>();
 
 				// ading root node to queue
-				g = new Graph();
-				g.setLizardCount(0);
-				g.setLastLevelPlaced(0);
-				g.setLastRow(0);
-				g.setLastCol(-1);
+				node = new Node();
+				node.setLizardCount(0);
+				node.setLatestRowLizPlaced(0);
+				node.setLatestColLizPlaced(-1);
 				int[][] adjMatrix = new int[dimension][dimension];
 				for (int i = 0; i < dimension; i++) {
 					for (int j = 0; j < dimension; j++) {
 						adjMatrix[i][j] = input[i][j];
 					}
 				}
-				g.setIntermediate(adjMatrix);
+				node.setIntermediateMatrix(adjMatrix);
 
-				queue.add(g);
+				queue.add(node);
+				//Since the entire program should terminate within 5 minutes
 				long endTime = System.currentTimeMillis() + 295000;
 				while (!queue.isEmpty()) {
 					if (System.currentTimeMillis() > endTime) {
-						List<String> lines = new ArrayList<String>();
-						lines.add("FAIL");
-						Path file = Paths.get(outputFilePath);
-						Files.write(file, lines, Charset.forName("UTF-8"));
+						displayFailureOutput();
 						return;
 					}
-					Graph parent = new Graph();
-					if ("BFS".equalsIgnoreCase(algo)) {
-						// System.out.println("BFS");
+					Node parent = null;
+					if ("BFS".equalsIgnoreCase(searchStrategy)) {
 						parent = queue.removeFirst();
-					} else if ("DFS".equalsIgnoreCase(algo)) {
-						// System.out.println("DFS");
+					} else if ("DFS".equalsIgnoreCase(searchStrategy)) {
 						parent = queue.removeLast();
 					}
-					int prevLevel = parent.getLastLevelPlaced();
-					if (prevLevel < dimension) {
-						Graph child;
+					int latestRowLizPlaced = parent.getLatestRowLizPlaced();
+					if (latestRowLizPlaced < dimension) {
+						Node child;
 						Boolean isLizrdPlaced = false;
-
-						for (int j = parent.lastCol + 1; j < dimension; j++) {
-							child = new Graph(parent);
-							if (isSafe(child.intermediate, prevLevel, j)) {
-								child.intermediate[prevLevel][j] = 1;
-								child.setLastCol(j);
-								child.setLastRow(prevLevel);
-								child.setLastLevelPlaced(prevLevel);
+						for (int j = parent.latestColLizPlaced + 1; j < dimension; j++) {
+							child = new Node(parent);
+							if (isSafe(child.intermediateMatrix, latestRowLizPlaced, j)) {
+								child.intermediateMatrix[latestRowLizPlaced][j] = 1;
+								child.setLatestColLizPlaced(j);
+								child.setLatestRowLizPlaced(latestRowLizPlaced);
 								child.setLizardCount(child.getLizardCount() + 1);
-
 								if (child.getLizardCount() == totalBabyLizards) {
-									child.getAllLizards(child.intermediate);
+									displayOutput(child.intermediateMatrix);
 									return;
 								}
 								queue.add(child);
 								isLizrdPlaced = true;
 							}
 						}
-
-						if (!isLizrdPlaced && ((prevLevel + 1) < dimension)) {
+						if (!isLizrdPlaced && ((latestRowLizPlaced + 1) < dimension)) {
 							for (int j = 0; j < dimension; j++) {
-								child = new Graph(parent);
-								if (isSafe(child.intermediate, prevLevel + 1, j)) {
-									child.intermediate[prevLevel + 1][j] = 1;
-									child.setLastCol(j);
-									child.setLastRow(prevLevel + 1);
-									child.setLastLevelPlaced(prevLevel + 1);
+								child = new Node(parent);
+								if (isSafe(child.intermediateMatrix, latestRowLizPlaced + 1, j)) {
+									child.intermediateMatrix[latestRowLizPlaced + 1][j] = 1;
+									child.setLatestColLizPlaced(j);
+									child.setLatestRowLizPlaced(latestRowLizPlaced + 1);
 									child.setLizardCount(child.getLizardCount() + 1);
 									if (child.getLizardCount() == totalBabyLizards) {
-										child.getAllLizards(child.intermediate);
+										displayOutput(child.intermediateMatrix);
 										return;
 									}
 									queue.add(child);
@@ -542,42 +498,32 @@ public class LizardProblem {
 								}
 							}
 						}
-
+						
+						// there might be the case where no lizards are placed in a row but answer exists. This happens only when there are trees.
 						if (treeCount > 0) {
-							child = new Graph(parent);
-							child.setLastCol(-1);
-							child.setLastRow(parent.getLastRow() + 1);
-							child.setLastLevelPlaced(prevLevel + 1);
+							child = new Node(parent);
+							child.setLatestColLizPlaced(-1);
+							child.setLatestRowLizPlaced(latestRowLizPlaced + 1);
 							queue.add(child);
 						}
 					}
 				}
-				List<String> lines = new ArrayList<String>();
-				lines.add("FAIL");
-				Path file = Paths.get(outputFilePath);
-				Files.write(file, lines, Charset.forName("UTF-8"));
+				displayFailureOutput();
 				return;
-			} else if ("SA".equalsIgnoreCase(algo)) {
+			} else if ("SA".equalsIgnoreCase(searchStrategy)) {
 				startTime = System.currentTimeMillis();
 				long endTime = System.currentTimeMillis() + 280000;
 				if (availablePositions.size() < totalBabyLizards) {
-					// System.out.println("FAIL");
-					List<String> lines = new ArrayList<String>();
-					lines.add("FAIL");
-					Path file = Paths.get(outputFilePath);
-					Files.write(file, lines, Charset.forName("UTF-8"));
+					displayFailureOutput();
 					return;
 				}
 				int prevNoOfAttacks = generateRandLizardPos();
 				if (availablePositions.size() == 0 && prevNoOfAttacks > 1) {
-					List<String> lines = new ArrayList<String>();
-					lines.add("FAIL");
-					Path file = Paths.get(outputFilePath);
-					Files.write(file, lines, Charset.forName("UTF-8"));
+					displayFailureOutput();
 					return;
 				}
 				if (prevNoOfAttacks == 0) {
-					displayOutput();
+					displayOutput(zoo);
 					return;
 				}
 				int curNoOfAttacks;
@@ -587,7 +533,7 @@ public class LizardProblem {
 					curNoOfAttacks = generateNeighborSolution();
 					if (curNoOfAttacks == 0) {
 						acceptNeighbour();
-						displayOutput();
+						displayOutput(zoo);
 						return;
 					} else if (curNoOfAttacks < prevNoOfAttacks) {
 						acceptNeighbour();
@@ -596,16 +542,13 @@ public class LizardProblem {
 					}
 					time = time + 0.01;
 				}
-				List<String> lines = new ArrayList<String>();
-				lines.add("FAIL");
-				Path file = Paths.get(outputFilePath);
-				Files.write(file, lines, Charset.forName("UTF-8"));
+				displayFailureOutput();
 			}
 			bufferedReader.close();
 		} catch (FileNotFoundException ex) {
-			// System.out.println("Unable to open file '" + fileName + "'");
+			 System.out.println("Unable to open file '" + fileName + "'");
 		} catch (IOException ex) {
-			// System.out.println("Error reading file '" + fileName + "'");
+			 System.out.println("Error reading file '" + fileName + "'");
 		}
 	}
 }
